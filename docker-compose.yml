@@ -1,0 +1,62 @@
+version: "3"
+
+services:
+  user_service_db:
+    container_name: food_drop_user_db
+    restart: always
+    image: mongo:6.0
+    ports:
+      - "2700:27017"
+    volumes:
+      - food_drop_user_vol:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+
+  user_service_api:
+    container_name: food_drop_user_api
+    volumes:
+      - .:/app
+    restart: always
+    build: .
+    ports:
+      - "80:3000"
+    depends_on:
+      - user_service_db
+    command: "yarn start"
+
+  food_drop_redis:
+    container_name: food_drop_redis
+    image: "redis:6.2.6"
+    environment:
+      - REDIS_USERNAME=${REDIS_USERNAME}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: redis-server --save 20 1 -loglevel warning --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "2701:6379"
+    volumes:
+      - food_drop_user_vol:/data
+    restart: always
+
+  food_drop_redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: always
+    environment:
+      REDIS_HOSTS: food_drop_redis
+      REDIS_HOST: food_drop_redis
+      REDIS_PORT: food_drop_redis:2701
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      HTTP_USER: ${REDIS_COMMANDER_USER}
+      HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD}
+    ports:
+      - "2702:8081"
+    depends_on:
+      - food_drop_redis
+
+volumes:
+  food_drop_user_vol:
+
+networks:
+  default:
+    external: false
+    name: food_drop_backend

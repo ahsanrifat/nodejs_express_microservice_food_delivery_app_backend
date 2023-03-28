@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
 import mongoose from "mongoose";
+import userRouter from "./router/user";
 
 const app = express();
 // so that this app accepts json data from post request
 app.use(express.json());
-
+app.use("/users", userRouter);
 app.get("/", (req: Request, res: Response) => {
   return res.send("Hello world");
 });
